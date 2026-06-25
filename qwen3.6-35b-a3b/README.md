@@ -1,6 +1,6 @@
 # Model Profile: Qwen3.6-35B-A3B-Q8_0
 
-This directory contains the deployment configuration for running Qwen3.6-35B-A3B-Q8_0 for long-context, single-agent engineering tasks.
+This directory contains the deployment configuration for running [Qwen3.6-35B-A3B-Q8_0](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-GGUF) for long-context, single-agent engineering tasks.
 
 ## Hardware Topology
 
