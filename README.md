@@ -1,6 +1,6 @@
 # Local LLM Development & Infrastructure Engineering
 
-This is my central repository for things I've learned about Local LLMs deployments and architecture.
+This is my central repository for things I've learned about Local LLM deployments and architecture.
 
 ## Why This Repository Exists
 
