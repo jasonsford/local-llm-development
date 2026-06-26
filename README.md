@@ -17,3 +17,4 @@ Each subdirectory in this repository represents a different model deployment pro
 | Deployment Directory | Primary Target Model | Focus Workload | Core Infrastructure Strategy |
 | :--- | :--- | :--- | :--- |
 | **[`/qwen3.6-35b-a3b`](./qwen3.6-35b-a3b/)** | Qwen3.6-35B-A3B-Q8_0 | Agentic Software Engineering | 8-bit KV Quantization, Intel P-Core Pinning |
+| **[`/Gemma-4-E2B-it-Q4_K_M`](./Gemma-4-E2B-it-Q4_K_M/)** | Gemma-4-E2B-it-Q4_K_M | Edge Text Summarization | 4-bit Quantization, Resource Allocation |
