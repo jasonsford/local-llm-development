@@ -46,16 +46,23 @@ expands the sparse attention indexer budget to 4096 tokens, ensuring robust retr
 ### 4. Sampling Constraints in Thinking Mode
 When running native DeepSeek-style reasoning (`--reasoning-format deepseek`), strict repetition penalties and tight `top-p` limits prematurely suppress chain-of-thought exploration. Setting `--temp 1.0`, `--top-p 0.95`, `--min-p 0.0`, and resetting `--repeat-penalty 1.0` avoids repetitive degradation loops while allowing thinking traces to explore full solution trees cleanly.
 
+### 5. GA102 Firmware & PCIe Optimizations (RTX 3080 20GB Mods)
+Because the two RTX 3080 20GB cards host ~40% of the model's active weights (`--tensor-split 40,29,30,30,42,32`), optimizing their compute issue rate and host memory aperture unlocked significant throughput gains without altering VRAM capacity:
+- **FP16/BF16 Issue Rate Unlock ([Zagitta/gpu-unlock](https://github.com/Zagitta/gpu-unlock)):** Loaded as an early-initramfs kernel module, this bypasses the artificial GeForce instruction-issue clamp on the GA102 cores by reprogramming the `SS0`/`SS1` rate selectors prior to driver attachment. This boosted dense GEMM and FlashAttention throughput across CUDA 0 and CUDA 4, driving steady-state prefill from **522.50 t/s up to 702.92 t/s (+34.5%)**.
+- **Dynamic 32 GiB Resizable BAR ([noon-at-cgn/3080-20gb-rebar](https://github.com/noon-at-cgn/3080-20gb-rebar)):** Memory-modded 20GB cards are historically locked to a legacy 256 MiB BAR1 aperture on custom vBIOS images. Running `rebar-arm` at early boot overrides the PCIe configuration space, expanding BAR1 to **32 GiB (32,768 MiB)** on both cards to eliminate host staging bounce buffers and map the full framebuffer directly into host physical address space.
+
 ## Performance
 
-Captured directly from `llama-server` during sustained multi-token benchmarks:
+Captured directly from `llama-server` logs during sustained 256k-context inference runs comparing stock baseline vs. unlocked GA102 configurations:
 
-| Metric | Measured Value | Notes |
-| :--- | :--- | :--- |
-| **Prompt Processing (Prefill Speed)** | **522.50 tokens/sec** | 1,002 tokens ingested in 1.91s (`ubatch: 1024`, `batch: 2048`) |
-| **Text Generation (Eval Speed)** | **40.50 to 40.96 tokens/sec** | Steady across 1,500+ tokens without pipeline stalls |
-| **Allocated Context Depth** | **262,144 tokens (256k)** | Fully resident in VRAM using `q4_0` / `q4_0` KV cache |
-| **CUDA Graph Stability** | **1,463 reused / 0 reallocs** | 100% graph reuse efficiency with zero memory thrashing |
+| Metric | Stock Baseline | Unlocked (ReBAR + Zagitta Kmod) | Notes |
+| :--- | :--- | :--- | :--- |
+| **Prompt Processing (Prefill Speed)** | 522.50 tokens/sec | **702.92 tokens/sec** *(+34.5%)* | 1,019 tokens in 1.45s warm (`ubatch 1024`, `batch 2048`); 339.46 t/s cold graph compilation |
+| **Text Generation (Eval Speed)** | 40.50 tokens/sec | **39.65 tokens/sec** | Bound by GDDR6X memory bus bandwidth; flat across runs within margin of error |
+| **Allocated Context Depth** | 262,144 tokens (256k) | **262,144 tokens (256k)** | Fully resident in VRAM using `q4_0` / `q4_0` KV cache quantization |
+| **BAR1 Aperture (CUDA 0 & 4)** | 256 MiB | **32,768 MiB (32 GiB)** | Expanded via [`noon-at-cgn/3080-20gb-rebar`](https://github.com/noon-at-cgn/3080-20gb-rebar) |
+| **Tensor Core Issue Rate** | Stock GeForce Clamp | **Full Rate (Unlocked)** | Enabled via [`Zagitta/gpu-unlock`](https://github.com/Zagitta/gpu-unlock) early initramfs module |
+| **CUDA Graph Stability** | 1,463 reused / 0 reallocs | **1,107 reused / 0 reallocs** | 100% graph reuse efficiency with zero memory thrashing |
 
 ## Model Artifacts & Launch Configuration
 
