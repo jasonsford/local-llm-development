@@ -11,7 +11,7 @@ The host environment utilizes an asymmetric multi-GPU cluster balancing Ampere, 
 - **CPU:** Intel Core i7-14700K (8 P-Cores / 12 E-Cores | 28 Threads)
 - **Motherboard:** MSI PRO Z790-P WIFI (MS-7E06)
 - **System RAM:** 96GB DDR5
-- **Total Dedicated VRAM Pool:** 106.4 GB (spread across 6 GPUs)
+- **Total Dedicated VRAM Pool:** 104 GB (spread across 6 GPUs)
 
 ### Physical PCIe & OCuLink Routing Layout
 
@@ -49,7 +49,7 @@ When running native DeepSeek-style reasoning (`--reasoning-format deepseek`), st
 ### 5. GA102 Firmware & PCIe Optimizations (RTX 3080 20GB Mods)
 Because the two RTX 3080 20GB cards host ~40% of the model's active weights (`--tensor-split 40,29,30,30,42,32`), optimizing their compute issue rate and host memory aperture unlocked significant throughput gains without altering VRAM capacity:
 - **FP16/BF16 Issue Rate Unlock ([Zagitta/gpu-unlock](https://github.com/Zagitta/gpu-unlock)):** Loaded as an early-initramfs kernel module, this bypasses the artificial GeForce instruction-issue clamp on the GA102 cores by reprogramming the `SS0`/`SS1` rate selectors prior to driver attachment. This boosted dense GEMM and FlashAttention throughput across CUDA 0 and CUDA 4, driving steady-state prefill from **522.50 t/s up to 702.92 t/s (+34.5%)**.
-- **Dynamic 32 GiB Resizable BAR ([noon-at-cgn/3080-20gb-rebar](https://github.com/noon-at-cgn/3080-20gb-rebar)):** Memory-modded 20GB cards are historically locked to a legacy 256 MiB BAR1 aperture on custom vBIOS images. Running `rebar-arm` at early boot overrides the PCIe configuration space, expanding BAR1 to **32 GiB (32,768 MiB)** on both cards to eliminate host staging bounce buffers and map the full framebuffer directly into host physical address space.
+- **Dynamic 32 GiB Resizable BAR ([noon-at-cgn/3080-20gb-rebar](https://github.com/noon-at-cgn/3080-20gb-rebar)):** Memory-modded 20GB cards are locked to a 256 MiB BAR1 aperture. Running `rebar-arm` at early boot overrides the PCIe configuration space, expanding BAR1 to **32 GiB (32,768 MiB)** on both cards to eliminate host staging bounce buffers and map the full framebuffer directly into host physical address space.
 
 ## Performance
 
